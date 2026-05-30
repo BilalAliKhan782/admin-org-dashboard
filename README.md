@@ -68,6 +68,14 @@ Recommended workflow for submission:
 - merge at least two pull requests into `development`
 - merge `development` into `main` when stable
 
+## Deployment
+
+Vercel is configured as a Vite app through `vercel.json`.
+
+- Production deployment should track `main`.
+- Preview deployment should track `development`.
+- Both environments need `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+
 Example PR scopes:
 
 - `feat: scaffold auth and protected shell`
