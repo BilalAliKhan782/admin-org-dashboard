@@ -1,0 +1,4 @@
+project_id = "admin-org-dashboard"
+
+[functions.invite-member]
+verify_jwt = true
