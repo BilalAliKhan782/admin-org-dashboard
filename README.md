@@ -2,6 +2,14 @@
 
 Small full-stack admin dashboard for creating organizations, inviting members, and viewing the organizations managed by the signed-in admin.
 
+## Deliverables
+
+- GitHub repository: https://github.com/BilalAliKhan782/admin-org-dashboard
+- Production: https://admin-org-dashboard.vercel.app
+- Development preview: https://admin-org-dashboard-development.vercel.app
+- Supabase project ref: `snsfkiycaohtzgvsmaow`
+- Loom walkthrough: TODO
+
 ## Stack
 
 - React 18, TypeScript strict mode, Vite with SWC
@@ -92,19 +100,19 @@ Do not expose `SUPABASE_SERVICE_ROLE_KEY` in the Vercel frontend project. Supaba
 
 ## Test Credentials
 
-Create a seeded user in Supabase Auth, then mark its profile as admin before submission:
+Seeded reviewer admin:
+
+```text
+Email: reviewer@adminorg.dev
+Password: BilalAdmin!2026
+```
+
+To create another admin user, create the user in Supabase Auth, then promote its profile:
 
 ```sql
 update public.profiles
 set is_admin = true
 where email = 'admin@example.com';
-```
-
-Add the credentials here:
-
-```text
-Email: admin@example.com
-Password: replace-with-real-password
 ```
 
 Use `docs/submission-checklist.md` for the final handoff pass before sharing the repository.
