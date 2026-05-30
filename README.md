@@ -107,6 +107,8 @@ Email: admin@example.com
 Password: replace-with-real-password
 ```
 
+Use `docs/submission-checklist.md` for the final handoff pass before sharing the repository.
+
 ## Tradeoffs
 
 - Email delivery is intentionally not implemented. The invitation record is created server-side, and the Edge Function is where a provider such as Resend or Postmark would be added.
