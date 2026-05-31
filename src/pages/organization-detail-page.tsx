@@ -1,46 +1,36 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MailPlus } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
-import { getOrganization, inviteMember, listMembers } from "@/api/organizations";
+import { useInviteMember, useMembers, useOrganization } from "@/api/organizations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { typeLabels } from "@/constants/organizations";
+import { getTypeSpecificDetail, statusBadgeClasses, typeBadgeClasses, typeLabels } from "@/constants/organizations";
+import { formatRelativeDate } from "@/lib/utils";
 import { invitationSchema, type InvitationFormValues } from "@/schemas/invitation";
 
 export function OrganizationDetailPage() {
   const { organizationId } = useParams();
-  const queryClient = useQueryClient();
   const form = useForm<InvitationFormValues>({
     resolver: zodResolver(invitationSchema),
     defaultValues: { email: "", role: "member" },
   });
 
-  const organizationQuery = useQuery({
-    queryKey: ["organizations", organizationId],
-    queryFn: () => getOrganization(organizationId!),
-    enabled: Boolean(organizationId),
-  });
-  const membersQuery = useQuery({
-    queryKey: ["organizations", organizationId, "members"],
-    queryFn: () => listMembers(organizationId!),
-    enabled: Boolean(organizationId),
-  });
-  const inviteMutation = useMutation({
-    mutationFn: (values: InvitationFormValues) => inviteMember(organizationId!, values),
-    onSuccess: async () => {
-      form.reset({ email: "", role: "member" });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["organizations", organizationId, "members"] }),
-        queryClient.invalidateQueries({ queryKey: ["organizations"] }),
-      ]);
-    },
-  });
+  const organizationQuery = useOrganization(organizationId);
+  const membersQuery = useMembers(organizationId);
+  const inviteMutation = useInviteMember(organizationId);
+
+  function onSubmit(values: InvitationFormValues) {
+    inviteMutation.mutate(values, {
+      onSuccess: () => {
+        form.reset({ email: "", role: "member" });
+      },
+    });
+  }
 
   if (organizationQuery.isLoading) {
     return <p className="text-sm text-muted-foreground">Loading organization...</p>;
@@ -60,6 +50,7 @@ export function OrganizationDetailPage() {
   }
 
   const organization = organizationQuery.data;
+  const typeDetail = getTypeSpecificDetail(organization);
 
   return (
     <section className="space-y-5">
@@ -67,10 +58,14 @@ export function OrganizationDetailPage() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{organization.name}</h1>
-            <Badge>{typeLabels[organization.type]}</Badge>
+            <Badge className={typeBadgeClasses[organization.type]}>{typeLabels[organization.type]}</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Created {new Date(organization.created_at).toLocaleDateString()}
+            Created {formatRelativeDate(organization.created_at)}
+          </p>
+          <p className="mt-2 text-sm">
+            <span className="font-medium">{typeDetail.label}:</span>{" "}
+            <span className="text-muted-foreground">{typeDetail.value}</span>
           </p>
         </div>
         <Button variant="outline" asChild>
@@ -84,17 +79,17 @@ export function OrganizationDetailPage() {
           <CardDescription>Invitations are created through the Supabase Edge Function.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 md:grid-cols-[1fr_180px_auto]" onSubmit={form.handleSubmit((values) => inviteMutation.mutate(values))}>
-            <FormField label="Email" error={form.formState.errors.email?.message}>
-              <Input type="email" placeholder="member@example.com" {...form.register("email")} />
+          <form className="grid gap-4 md:grid-cols-[1fr_180px_auto]" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+            <FormField label="Email" htmlFor="member-email" error={form.formState.errors.email?.message}>
+              <Input id="member-email" type="email" placeholder="member@example.com" {...form.register("email")} />
             </FormField>
-            <FormField label="Role" error={form.formState.errors.role?.message}>
+            <FormField label="Role" htmlFor="member-role" error={form.formState.errors.role?.message}>
               <Controller
                 control={form.control}
                 name="role"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
+                    <SelectTrigger id="member-role">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -126,9 +121,9 @@ export function OrganizationDetailPage() {
             {membersQuery.data?.map((member) => (
               <div key={member.id} className="grid gap-2 p-4 sm:grid-cols-[1fr_100px_100px_140px] sm:items-center">
                 <span className="font-medium">{member.email}</span>
-                <Badge>{member.status}</Badge>
+                <Badge className={statusBadgeClasses[member.status]}>{member.status}</Badge>
                 <span className="text-sm capitalize text-muted-foreground">{member.role}</span>
-                <span className="text-sm text-muted-foreground">{new Date(member.invited_at).toLocaleDateString()}</span>
+                <span className="text-sm text-muted-foreground">{formatRelativeDate(member.invited_at)}</span>
               </div>
             ))}
           </div>

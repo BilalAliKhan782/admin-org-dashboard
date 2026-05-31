@@ -1,9 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Save } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { createOrganization } from "@/api/organizations";
+import { useCreateOrganization } from "@/api/organizations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
@@ -14,7 +13,6 @@ import { organizationSchema, type OrganizationFormValues } from "@/schemas/organ
 
 export function CreateOrganizationPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
     defaultValues: {
@@ -28,13 +26,15 @@ export function CreateOrganizationPage() {
   const selectedType = form.watch("type");
   const typeConfig = organizationTypes.find((type) => type.value === selectedType)!;
 
-  const mutation = useMutation({
-    mutationFn: createOrganization,
-    onSuccess: async (organization) => {
-      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
+  const mutation = useCreateOrganization();
+
+  function onSubmit(values: OrganizationFormValues) {
+    mutation.mutate(values, {
+      onSuccess: (organization) => {
       navigate(`/organizations/${organization.id}`);
-    },
-  });
+      },
+    });
+  }
 
   return (
     <section className="max-w-2xl space-y-5">
@@ -48,17 +48,17 @@ export function CreateOrganizationPage() {
           <CardDescription>{typeConfig.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
-            <FormField label="Name" error={form.formState.errors.name?.message}>
-              <Input {...form.register("name")} placeholder="River City Partners" />
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+            <FormField label="Name" htmlFor="organization-name" error={form.formState.errors.name?.message}>
+              <Input id="organization-name" {...form.register("name")} placeholder="River City Partners" />
             </FormField>
-            <FormField label="Type" error={form.formState.errors.type?.message}>
+            <FormField label="Type" htmlFor="organization-type" error={form.formState.errors.type?.message}>
               <Controller
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
+                    <SelectTrigger id="organization-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -74,9 +74,11 @@ export function CreateOrganizationPage() {
             </FormField>
             <FormField
               label={typeConfig.conditionalLabel}
+              htmlFor={`organization-${typeConfig.conditionalField}`}
               error={form.formState.errors[typeConfig.conditionalField]?.message}
             >
               <Input
+                id={`organization-${typeConfig.conditionalField}`}
                 {...form.register(typeConfig.conditionalField)}
                 placeholder={typeConfig.conditionalPlaceholder}
               />

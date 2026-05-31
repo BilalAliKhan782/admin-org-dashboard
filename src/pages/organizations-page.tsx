@@ -1,17 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
 import { Building2, ChevronRight, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { listOrganizations } from "@/api/organizations";
+import { useOrganizations } from "@/api/organizations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { typeLabels } from "@/constants/organizations";
+import { typeBadgeClasses, typeLabels } from "@/constants/organizations";
+import { formatRelativeDate } from "@/lib/utils";
 
 export function OrganizationsPage() {
-  const organizationsQuery = useQuery({
-    queryKey: ["organizations"],
-    queryFn: listOrganizations,
-  });
+  const organizationsQuery = useOrganizations();
 
   return (
     <section className="space-y-5">
@@ -72,9 +69,9 @@ export function OrganizationsPage() {
                 </p>
               </div>
             </div>
-            <Badge className="w-fit">{typeLabels[organization.type]}</Badge>
+            <Badge className={typeBadgeClasses[organization.type]}>{typeLabels[organization.type]}</Badge>
             <span className="text-sm text-muted-foreground">{organization.member_count} members</span>
-            <span className="text-sm text-muted-foreground">{new Date(organization.created_at).toLocaleDateString()}</span>
+            <span className="text-sm text-muted-foreground">{formatRelativeDate(organization.created_at)}</span>
             <ChevronRight className="hidden h-5 w-5 text-muted-foreground sm:block" />
           </Link>
         ))}

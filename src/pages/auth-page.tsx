@@ -54,21 +54,49 @@ export function AuthPage() {
           <CardDescription>Use an admin email and password to manage organizations.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <FormField label="Email" error={form.formState.errors.email?.message}>
-              <Input type="email" autoComplete="email" {...form.register("email")} />
+          <div className="mb-5 grid grid-cols-2 rounded-md border bg-muted p-1" role="tablist" aria-label="Authentication mode">
+            <Button
+              type="button"
+              variant={mode === "sign-in" ? "secondary" : "ghost"}
+              role="tab"
+              aria-selected={mode === "sign-in"}
+              onClick={() => {
+                setMode("sign-in");
+                setFormError(null);
+              }}
+            >
+              Sign in
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "sign-up" ? "secondary" : "ghost"}
+              role="tab"
+              aria-selected={mode === "sign-up"}
+              onClick={() => {
+                setMode("sign-up");
+                setFormError(null);
+              }}
+            >
+              Sign up
+            </Button>
+          </div>
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+            <FormField label="Email" htmlFor="auth-email" error={form.formState.errors.email?.message}>
+              <Input id="auth-email" type="email" autoComplete="email" {...form.register("email")} />
             </FormField>
-            <FormField label="Password" error={form.formState.errors.password?.message}>
-              <Input type="password" autoComplete={mode === "sign-in" ? "current-password" : "new-password"} {...form.register("password")} />
+            <FormField label="Password" htmlFor="auth-password" error={form.formState.errors.password?.message}>
+              <Input
+                id="auth-password"
+                type="password"
+                autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                {...form.register("password")}
+              />
             </FormField>
             {formError ? <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{formError}</p> : null}
             <Button className="w-full" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? "Working..." : mode === "sign-in" ? "Sign in" : "Sign up"}
             </Button>
           </form>
-          <Button className="mt-3 w-full" variant="ghost" onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}>
-            {mode === "sign-in" ? "Need an account? Sign up" : "Already have an account? Sign in"}
-          </Button>
         </CardContent>
       </Card>
     </div>

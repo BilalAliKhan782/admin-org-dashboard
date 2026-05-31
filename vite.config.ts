@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
@@ -8,5 +8,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+    globals: true,
   },
 });
