@@ -7,6 +7,10 @@ import type { OrganizationFormValues } from "@/schemas/organization";
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 export type OrganizationDirectoryItem = Database["public"]["Views"]["organization_directory"]["Row"];
 export type OrganizationMember = Database["public"]["Tables"]["organization_members"]["Row"];
+export type InvitationDetails = Database["public"]["Functions"]["get_invitation_by_token"]["Returns"][number];
+export type InviteMemberResult = OrganizationMember & {
+  invitation_url?: string;
+};
 
 export const organizationKeys = {
   all: ["organizations"] as const,
@@ -93,7 +97,7 @@ export function useMembers(organizationId?: string) {
 }
 
 export async function inviteMember(organizationId: string, values: InvitationFormValues) {
-  const { data, error } = await supabase.functions.invoke<OrganizationMember>("invite-member", {
+  const { data, error } = await supabase.functions.invoke<InviteMemberResult>("invite-member", {
     body: {
       organization_id: organizationId,
       email: values.email,
@@ -101,7 +105,7 @@ export async function inviteMember(organizationId: string, values: InvitationFor
     },
   });
 
-  if (error) throw error;
+  if (error) throw new Error(await getFunctionErrorMessage(error));
   return data;
 }
 
@@ -117,4 +121,64 @@ export function useInviteMember(organizationId?: string) {
       ]);
     },
   });
+}
+
+export async function getInvitationByToken(token: string) {
+  const { data, error } = await supabase.rpc("get_invitation_by_token", { p_token: token });
+  if (error) throw error;
+  return data[0] ?? null;
+}
+
+export function useInvitation(token?: string) {
+  return useQuery({
+    queryKey: ["invitation", token],
+    queryFn: () => getInvitationByToken(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export async function removeMember(memberId: string) {
+  const { error } = await supabase.from("organization_members").delete().eq("id", memberId);
+  if (error) throw error;
+}
+
+export function useRemoveMember(organizationId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: removeMember,
+    onSuccess: async () => {
+      if (!organizationId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: organizationKeys.members(organizationId) }),
+        queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+      ]);
+    },
+  });
+}
+
+export async function acceptInvitation(token: string) {
+  const { data, error } = await supabase.rpc("accept_invitation", { p_token: token });
+  if (error) throw error;
+  return data[0];
+}
+
+export function useAcceptInvitation() {
+  return useMutation({
+    mutationFn: acceptInvitation,
+  });
+}
+
+async function getFunctionErrorMessage(error: Error & { context?: Response }) {
+  if (error.context instanceof Response) {
+    const body = await error.context
+      .clone()
+      .json()
+      .catch(() => null);
+
+    if (body && typeof body.error === "string") {
+      return body.error;
+    }
+  }
+
+  return error.message;
 }

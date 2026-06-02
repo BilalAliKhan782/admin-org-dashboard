@@ -49,6 +49,7 @@ export interface Database {
           role: MemberRole;
           invited_at: string;
           joined_at: string | null;
+          invitation_token: string;
         };
         Insert: {
           id?: string;
@@ -59,6 +60,7 @@ export interface Database {
           role?: MemberRole;
           invited_at?: string;
           joined_at?: string | null;
+          invitation_token?: string;
         };
         Update: Partial<Database["public"]["Tables"]["organization_members"]["Insert"]>;
         Relationships: [
@@ -123,7 +125,24 @@ export interface Database {
         ];
       };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      accept_invitation: {
+        Args: { p_token: string };
+        Returns: { organization_id: string }[];
+      };
+      get_invitation_by_token: {
+        Args: { p_token: string };
+        Returns: {
+          id: string;
+          organization_id: string;
+          organization_name: string;
+          email: string;
+          role: MemberRole;
+          status: MemberStatus;
+          invited_at: string;
+        }[];
+      };
+    };
     Enums: {
       organization_type: OrganizationType;
       member_status: MemberStatus;

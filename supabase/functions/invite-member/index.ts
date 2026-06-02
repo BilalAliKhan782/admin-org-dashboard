@@ -64,7 +64,20 @@ Deno.serve(async (req) => {
     return json({ error: "Organization not found." }, 404);
   }
 
-  if (organization.created_by !== user.id) {
+  const { data: managerMembership, error: managerMembershipError } = await adminClient
+    .from("organization_members")
+    .select("id")
+    .eq("organization_id", parsed.data.organization_id)
+    .eq("user_id", user.id)
+    .eq("role", "manager")
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (managerMembershipError) {
+    return json({ error: managerMembershipError.message }, 400);
+  }
+
+  if (organization.created_by !== user.id && !managerMembership) {
     return json({ error: "You can only invite members to organizations you manage." }, 403);
   }
 
@@ -86,7 +99,10 @@ Deno.serve(async (req) => {
     return json({ error: error.message }, 400);
   }
 
-  return json(data, 201);
+  const origin = req.headers.get("Origin") ?? Deno.env.get("SITE_URL") ?? "";
+  const invitationUrl = origin ? `${origin}/accept-invitation/${data.invitation_token}` : undefined;
+
+  return json({ ...data, invitation_url: invitationUrl }, 201);
 });
 
 function json(body: unknown, status = 200) {

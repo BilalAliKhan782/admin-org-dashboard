@@ -22,10 +22,11 @@ export function AuthPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/";
+  const fromLocation = (location.state as { from?: Location } | null)?.from;
+  const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : "/";
 
   if (!isLoading && user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   async function onSubmit(values: AuthFormValues) {

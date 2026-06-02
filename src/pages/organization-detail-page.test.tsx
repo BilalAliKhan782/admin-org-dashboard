@@ -3,18 +3,27 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrganizationDetailPage } from "@/pages/organization-detail-page";
-import { useInviteMember, useMembers, useOrganization } from "@/api/organizations";
+import { useInviteMember, useMembers, useOrganization, useRemoveMember } from "@/api/organizations";
+import { useAuth } from "@/hooks/use-auth";
 
 vi.mock("@/api/organizations", () => ({
   useOrganization: vi.fn(),
   useMembers: vi.fn(),
   useInviteMember: vi.fn(),
+  useRemoveMember: vi.fn(),
+}));
+
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: vi.fn(),
 }));
 
 const useOrganizationMock = vi.mocked(useOrganization);
 const useMembersMock = vi.mocked(useMembers);
 const useInviteMemberMock = vi.mocked(useInviteMember);
+const useRemoveMemberMock = vi.mocked(useRemoveMember);
+const useAuthMock = vi.mocked(useAuth);
 const mutate = vi.fn();
+const removeMutate = vi.fn();
 
 function renderDetailPage() {
   return render(
@@ -29,6 +38,11 @@ function renderDetailPage() {
 describe("OrganizationDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useAuthMock.mockReturnValue({
+      user: { id: "user-1", email: "owner@example.com" },
+      session: null,
+      isLoading: false,
+    } as never);
     useOrganizationMock.mockReturnValue({
       data: {
         id: "org-1",
@@ -54,11 +68,13 @@ describe("OrganizationDetailPage", () => {
           role: "member",
           invited_at: new Date(Date.now() - 60 * 1000).toISOString(),
           joined_at: null,
+          invitation_token: "11111111-1111-1111-1111-111111111111",
         },
       ],
       isLoading: false,
     } as never);
     useInviteMemberMock.mockReturnValue({ mutate, isPending: false, isError: false } as never);
+    useRemoveMemberMock.mockReturnValue({ mutate: removeMutate, isPending: false, isError: false } as never);
   });
 
   it("renders organization type details and member status badges", () => {

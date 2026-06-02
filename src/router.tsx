@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/app-layout";
 import { ProtectedRoute } from "@/components/protected-route";
+import { AcceptInvitationPage } from "@/pages/accept-invitation-page";
 import { AuthPage } from "@/pages/auth-page";
 import { CreateOrganizationPage } from "@/pages/create-organization-page";
 import { OrganizationDetailPage } from "@/pages/organization-detail-page";
@@ -10,6 +11,10 @@ export const router = createBrowserRouter([
   {
     path: "/auth",
     element: <AuthPage />,
+  },
+  {
+    path: "/accept-invitation/:token",
+    element: <AcceptInvitationPage />,
   },
   {
     path: "/",
