@@ -1,5 +1,6 @@
 import { Building2, LogOut, Plus } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,6 +25,7 @@ export function AppLayout() {
           </Link>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span className="max-w-[240px] truncate">{user?.email}</span>
+            <ThemeToggle />
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
               Sign out
