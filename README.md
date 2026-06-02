@@ -64,7 +64,9 @@ The migration in `supabase/migrations/202605300001_initial_schema.sql` creates:
 - RLS policies on every table
 - an auth trigger that creates a profile for each signed-up user
 
-The `invite-member` Edge Function validates the request body, verifies the caller owns the organization, and inserts the invitation using the service role key. Duplicate organization/email invitations are blocked by a unique constraint.
+The `invite-member` Edge Function validates the request body, verifies the caller is the creator or an active manager, and inserts the invitation using the service role key. Duplicate organization/email invitations are blocked by a unique constraint.
+
+Invitation links use `/accept-invitation/:token`. The token lookup and acceptance flow are handled by security-definer RPC functions so pending invitation rows are not broadly exposed through anonymous RLS reads.
 
 ## Branching Strategy
 
@@ -98,6 +100,28 @@ Vercel should define:
 
 Do not expose `SUPABASE_SERVICE_ROLE_KEY` in the Vercel frontend project. Supabase automatically provides it to Edge Functions in the Supabase runtime.
 
+## Environments
+
+- **Development**: Use a separate Supabase project such as `admin-org-dashboard-dev` for testing migrations, invitations, and E2E data.
+- **Production**: Main Supabase project, currently `snsfkiycaohtzgvsmaow`.
+
+To switch environments locally, update `.env.local` with the matching project credentials:
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+For a new development Supabase project, link the project, apply migrations, and deploy the Edge Function:
+
+```bash
+supabase link --project-ref your-dev-project-ref
+supabase db push
+supabase functions deploy invite-member
+```
+
+In Vercel, enable `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for Production, Preview, and Development environments.
+
 ## Test Credentials
 
 Seeded reviewer admin:
@@ -117,15 +141,30 @@ where email = 'admin@example.com';
 
 Use `docs/submission-checklist.md` for the final handoff pass before sharing the repository.
 
+## Testing
+
+Run unit and component tests:
+
+```bash
+npm test
+```
+
+Run Playwright E2E tests:
+
+```bash
+npx playwright install
+npm run test:e2e
+```
+
+The E2E test uses the reviewer admin credentials and creates a unique organization/invitation for each run.
+
 ## Tradeoffs
 
-- Email delivery is intentionally not implemented. The invitation record is created server-side, and the Edge Function is where a provider such as Resend or Postmark would be added.
+- Email delivery is intentionally not implemented. The invitation record and copyable invite link are created server-side, and the Edge Function is where a provider such as Resend or Postmark would be added.
 - Sign-up creates a non-admin profile. A seeded reviewer/admin account must be promoted by updating `profiles.is_admin`.
 - Organization creation uses client-side Zod validation plus database constraints. Invitation validation is repeated in the Edge Function.
 
 ## With Another Day
 
-- Add invitation acceptance and link accepted rows to `auth.users`.
-- Add role-based organization permissions beyond the creator admin.
-- Add Playwright coverage for sign-in, create organization, and invite member.
-- Add search and filters to the directory.
+- Add email delivery for invitation links.
+- Add cleanup tooling for E2E-created test organizations.
