@@ -1,14 +1,50 @@
+import { useMemo, useState } from "react";
 import { Building2, ChevronRight, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useOrganizations } from "@/api/organizations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { typeBadgeClasses, typeLabels } from "@/constants/organizations";
 import { formatRelativeDate } from "@/lib/utils";
+import type { OrganizationType } from "@/types/database";
+
+type TypeFilter = OrganizationType | "all";
+type SortBy = "newest" | "oldest" | "members";
 
 export function OrganizationsPage() {
   const organizationsQuery = useOrganizations();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
+
+  const filteredOrgs = useMemo(() => {
+    const organizations = organizationsQuery.data ?? [];
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    const filtered = organizations.filter((organization) => {
+      const matchesSearch = normalizedSearch
+        ? organization.name.toLowerCase().includes(normalizedSearch)
+        : true;
+      const matchesType = typeFilter === "all" ? true : organization.type === typeFilter;
+
+      return matchesSearch && matchesType;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "oldest") {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+
+      if (sortBy === "members") {
+        return b.member_count - a.member_count;
+      }
+
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [organizationsQuery.data, searchTerm, typeFilter, sortBy]);
 
   return (
     <section className="space-y-5">
@@ -24,6 +60,43 @@ export function OrganizationsPage() {
           </Link>
         </Button>
       </div>
+
+      {organizationsQuery.data?.length ? (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Input
+              placeholder="Search organizations..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="max-w-xs"
+            />
+            <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as TypeFilter)}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="school">School</SelectItem>
+                <SelectItem value="nonprofit">Nonprofit</SelectItem>
+                <SelectItem value="business">Business</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="members">Most Members</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredOrgs.length} of {organizationsQuery.data.length} organizations
+          </p>
+        </div>
+      ) : null}
 
       {organizationsQuery.isLoading ? (
         <Card>
@@ -51,8 +124,15 @@ export function OrganizationsPage() {
         </Card>
       ) : null}
 
-      <div className="overflow-hidden rounded-lg border bg-card">
-        {organizationsQuery.data?.map((organization) => (
+      {organizationsQuery.data?.length && filteredOrgs.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">No organizations match your filters.</CardContent>
+        </Card>
+      ) : null}
+
+      {organizationsQuery.data?.length ? (
+        <div className="overflow-hidden rounded-lg border bg-card">
+          {filteredOrgs.map((organization) => (
           <Link
             key={organization.id}
             to={`/organizations/${organization.id}`}
@@ -74,8 +154,9 @@ export function OrganizationsPage() {
             <span className="text-sm text-muted-foreground">{formatRelativeDate(organization.created_at)}</span>
             <ChevronRight className="hidden h-5 w-5 text-muted-foreground sm:block" />
           </Link>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
