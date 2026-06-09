@@ -97,8 +97,17 @@ Vercel should define:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_SENTRY_DSN` optional, enables Sentry in production
+- `VITE_POSTHOG_KEY` optional, enables PostHog analytics
 
 Do not expose `SUPABASE_SERVICE_ROLE_KEY` in the Vercel frontend project. Supabase automatically provides it to Edge Functions in the Supabase runtime.
+
+Supabase Edge Function secrets can optionally define:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 
 ## Environments
 
@@ -143,28 +152,60 @@ Use `docs/submission-checklist.md` for the final handoff pass before sharing the
 
 ## Testing
 
-Run unit and component tests:
+### Unit Tests
 
 ```bash
-npm test
+npm test                 # Run tests
+npm run test:ui          # Open Vitest UI
+npm run test:coverage    # Generate coverage report
 ```
 
-Run Playwright E2E tests:
+### E2E Tests
 
 ```bash
 npx playwright install
-npm run test:e2e
+npm run test:e2e         # Run Playwright tests
+npm run test:e2e:ui      # Open Playwright UI
 ```
 
 The E2E test uses the reviewer admin credentials and creates a unique organization/invitation for each run.
 
+## Features
+
+### Core Features
+
+- Authentication with Supabase Auth
+- Organization creation and directory browsing
+- Member invitation system with expiring acceptance links
+- Role-based member management with member and manager roles
+- Dark mode support
+- Search, filtering, sorting, pagination, and CSV export
+- Responsive design
+
+### Advanced Features
+
+- Magic-link invitation acceptance
+- Activity audit log
+- Email notifications with Resend when configured
+- Error tracking with Sentry when configured
+- Analytics with PostHog when configured
+- Offline shell support with a production service worker
+
+### Performance
+
+- React Query caching
+- Debounced organization filtering
+- Paginated directory rendering
+- Page-load performance events
+- Loading skeletons for organization cards
+
 ## Tradeoffs
 
-- Email delivery is intentionally not implemented. The invitation record and copyable invite link are created server-side, and the Edge Function is where a provider such as Resend or Postmark would be added.
+- Email delivery, Sentry, PostHog, and Upstash rate limiting are opt-in through environment variables so local development can run without those external services.
 - Sign-up creates a non-admin profile. A seeded reviewer/admin account must be promoted by updating `profiles.is_admin`.
 - Organization creation uses client-side Zod validation plus database constraints. Invitation validation is repeated in the Edge Function.
 
 ## With Another Day
 
-- Add email delivery for invitation links.
 - Add cleanup tooling for E2E-created test organizations.
+- Expand the activity log into a dedicated timeline with filters.
