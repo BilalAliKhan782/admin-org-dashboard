@@ -9,6 +9,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { organizationTypes } from "@/constants/organizations";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import { organizationSchema, type OrganizationFormValues } from "@/schemas/organization";
 
 export function CreateOrganizationPage() {
@@ -23,6 +24,7 @@ export function CreateOrganizationPage() {
       business_domain: "",
     },
   });
+  useUnsavedChangesWarning(form.formState.isDirty);
   const selectedType = form.watch("type");
   const typeConfig = organizationTypes.find((type) => type.value === selectedType)!;
 

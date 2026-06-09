@@ -14,6 +14,7 @@ export interface Database {
           type: OrganizationType;
           created_by: string;
           created_at: string;
+          updated_at: string;
           school_district: string | null;
           tax_id: string | null;
           business_domain: string | null;
@@ -24,6 +25,7 @@ export interface Database {
           type: OrganizationType;
           created_by?: string;
           created_at?: string;
+          updated_at?: string;
           school_district?: string | null;
           tax_id?: string | null;
           business_domain?: string | null;
