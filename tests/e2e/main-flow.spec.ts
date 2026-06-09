@@ -23,7 +23,9 @@ test("complete organization and invitation flow", async ({ page }) => {
   await expect(page.getByRole("link", { name: new RegExp(organizationName) })).toBeVisible();
 
   await page.getByRole("link", { name: new RegExp(organizationName) }).click();
-  await page.getByLabel("Email").fill(inviteEmail);
+  const inviteEmailField = page.getByLabel("Email");
+
+  await inviteEmailField.fill(inviteEmail);
   await page.getByRole("button", { name: "Invite" }).click();
 
   await expect(page.getByText(inviteEmail)).toBeVisible({ timeout: 30_000 });
@@ -33,7 +35,9 @@ test("complete organization and invitation flow", async ({ page }) => {
   const roleSelect = page.getByLabel(`Role for ${inviteEmail}`);
   await expect(roleSelect).toBeDisabled();
 
-  await page.getByLabel("Email").fill(inviteEmail);
+  await expect(inviteEmailField).toHaveValue("");
+  await inviteEmailField.fill(inviteEmail);
+  await expect(inviteEmailField).toHaveValue(inviteEmail);
   await page.getByRole("button", { name: "Invite" }).click();
 
   await expect(page.getByText(/already been invited/i)).toBeVisible({ timeout: 30_000 });
