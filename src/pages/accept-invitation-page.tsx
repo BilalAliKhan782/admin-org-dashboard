@@ -18,6 +18,10 @@ export function AcceptInvitationPage() {
   const isExpired = invitationQuery.data
     ? new Date(invitationQuery.data.invitation_expires_at).getTime() <= Date.now()
     : false;
+  const isSignedInWithInvitedEmail =
+    invitationQuery.data && user?.email
+      ? user.email.toLowerCase() === invitationQuery.data.email.toLowerCase()
+      : true;
 
   function acceptInvite() {
     if (!token) return;
@@ -82,19 +86,31 @@ export function AcceptInvitationPage() {
               {!isExpired && !isAuthLoading && !user ? (
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button asChild>
-                    <Link to="/auth" state={{ from: location }}>
+                    <Link
+                      to="/auth"
+                      state={{ from: location, inviteEmail: invitationQuery.data.email, authMode: "sign-in" }}
+                    >
                       Sign in to accept
                     </Link>
                   </Button>
                   <Button variant="outline" asChild>
-                    <Link to="/auth" state={{ from: location }}>
+                    <Link
+                      to="/auth"
+                      state={{ from: location, inviteEmail: invitationQuery.data.email, authMode: "sign-up" }}
+                    >
                       Sign up
                     </Link>
                   </Button>
                 </div>
               ) : null}
 
-              {!isExpired && user ? (
+              {!isExpired && user && !isSignedInWithInvitedEmail ? (
+                <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  This invitation is for {invitationQuery.data.email}. Sign out and use that email to accept it.
+                </p>
+              ) : null}
+
+              {!isExpired && user && isSignedInWithInvitedEmail ? (
                 <div className="space-y-3">
                   <Button onClick={acceptInvite} disabled={acceptMutation.isPending}>
                     <CheckCircle2 className="h-4 w-4" />

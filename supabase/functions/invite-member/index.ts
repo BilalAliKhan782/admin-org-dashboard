@@ -48,6 +48,10 @@ Deno.serve(async (req) => {
     return json({ error: "Supabase environment is not configured." }, 500);
   }
 
+  if (!resend) {
+    return json({ error: "Invitation email delivery is not configured. Set RESEND_API_KEY first." }, 500);
+  }
+
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return json({ error: "Missing authorization header." }, 401);
@@ -89,7 +93,7 @@ Deno.serve(async (req) => {
 
   const { data: organization, error: organizationError } = await adminClient
     .from("organizations")
-    .select("id, created_by")
+    .select("id, name, created_by")
     .eq("id", parsed.data.organization_id)
     .single();
 
@@ -136,26 +140,30 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") ?? Deno.env.get("SITE_URL") ?? "";
   const invitationUrl = origin ? `${origin}/accept-invitation/${data.invitation_token}` : undefined;
 
-  if (resend && invitationUrl) {
-    const organizationName = data.organizations?.name ?? "your organization";
-
-    const emailResult = await resend.emails.send({
-      from: resendFromEmail,
-      to: parsed.data.email,
-      subject: `You're invited to ${organizationName}`,
-      html: `
-        <p>You have been invited to join <strong>${organizationName}</strong>.</p>
-        <p><a href="${invitationUrl}">Accept your invitation</a></p>
-        <p>This invitation expires in 7 days.</p>
-      `,
-    });
-
-    if (emailResult.error) {
-      console.error("Failed to send invitation email:", emailResult.error);
-    }
+  if (!invitationUrl) {
+    await adminClient.from("organization_members").delete().eq("id", data.id);
+    return json({ error: "Unable to build invitation URL. Set SITE_URL for the Edge Function." }, 500);
   }
 
-  return json({ ...data, invitation_url: invitationUrl }, 201);
+  const emailResult = await resend.emails.send({
+    from: resendFromEmail,
+    to: parsed.data.email,
+    subject: `You're invited to ${organization.name}`,
+    html: `
+      <p>You have been invited to join <strong>${organization.name}</strong>.</p>
+      <p>Create an account or sign in with <strong>${parsed.data.email}</strong>, then accept your invitation:</p>
+      <p><a href="${invitationUrl}">Accept your invitation</a></p>
+      <p>This invitation expires in 7 days.</p>
+    `,
+  });
+
+  if (emailResult.error) {
+    console.error("Failed to send invitation email:", emailResult.error);
+    await adminClient.from("organization_members").delete().eq("id", data.id);
+    return json({ error: "Invitation email could not be sent. Please check email settings and try again." }, 502);
+  }
+
+  return json({ ...data, invitation_url: invitationUrl, email_sent: true }, 201);
 });
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {

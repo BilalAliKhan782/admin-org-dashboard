@@ -26,12 +26,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/auth" replace state={{ from: location }} />;
   }
 
-  if (profileQuery.isError || (profileQuery.data && !profileQuery.data.is_admin)) {
+  if (profileQuery.isError || !profileQuery.data) {
     return (
       <div className="grid min-h-screen place-items-center px-4 text-center">
         <div>
-          <h1 className="text-xl font-semibold">Admin access required</h1>
-          <p className="mt-2 text-sm text-muted-foreground">This workspace is restricted to admin users with a profile record.</p>
+          <h1 className="text-xl font-semibold">Profile required</h1>
+          <p className="mt-2 text-sm text-muted-foreground">This workspace requires a signed-in user profile.</p>
         </div>
       </div>
     );

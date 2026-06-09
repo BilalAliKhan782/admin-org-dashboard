@@ -109,6 +109,8 @@ Supabase Edge Function secrets can optionally define:
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
+`RESEND_API_KEY` is required for member invitations. The invite Edge Function creates the invitation only when the email is sent successfully.
+
 ## Environments
 
 - **Development**: Use a separate Supabase project such as `admin-org-dashboard-dev` for testing migrations, invitations, and E2E data.

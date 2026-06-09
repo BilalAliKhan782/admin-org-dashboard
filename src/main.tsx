@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MissingSupabaseConfig } from "@/components/missing-supabase-config";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import { initAnalytics } from "@/lib/analytics";
 import { validateEnv } from "@/lib/env";
 import { measurePageLoad } from "@/lib/performance";
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         {isSupabaseConfigured ? (
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
+            <Toaster />
           </QueryClientProvider>
         ) : (
           <MissingSupabaseConfig />

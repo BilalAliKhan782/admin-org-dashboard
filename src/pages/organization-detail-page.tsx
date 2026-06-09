@@ -14,6 +14,8 @@ import { getTypeSpecificDetail, statusBadgeClasses, typeBadgeClasses, typeLabels
 import { useAuth } from "@/hooks/use-auth";
 import { formatRelativeDate } from "@/lib/utils";
 import { invitationSchema, type InvitationFormValues } from "@/schemas/invitation";
+import { toast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export function OrganizationDetailPage() {
   const { organizationId } = useParams();
@@ -31,13 +33,31 @@ export function OrganizationDetailPage() {
 
   async function copyInviteLink(token: string) {
     const inviteUrl = `${window.location.origin}/accept-invitation/${token}`;
-    await navigator.clipboard.writeText(inviteUrl);
+    const copied = await copyToClipboard(inviteUrl);
+
+    toast({
+      title: copied ? "Invitation link copied" : "Unable to copy",
+      description: copied ? "Share the link with the invited member." : "Please copy the link manually.",
+      variant: copied ? "success" : "destructive",
+    });
   }
 
   function onSubmit(values: InvitationFormValues) {
     inviteMutation.mutate(values, {
       onSuccess: () => {
+        toast({
+          title: "Invitation sent",
+          description: `${values.email} has been invited.`,
+          variant: "success",
+        });
         form.reset({ email: "", role: "member" });
+      },
+      onError: (error) => {
+        toast({
+          title: "Invitation failed",
+          description: error.message,
+          variant: "destructive",
+        });
       },
     });
   }
@@ -146,7 +166,25 @@ export function OrganizationDetailPage() {
                   <Select
                     value={member.role}
                     onValueChange={(role) =>
-                      updateRoleMutation.mutate({ memberId: member.id, role: role as typeof member.role })
+                      updateRoleMutation.mutate(
+                        { memberId: member.id, role: role as typeof member.role },
+                        {
+                          onSuccess: () => {
+                            toast({
+                              title: "Role updated",
+                              description: `${member.email} is now a ${role}.`,
+                              variant: "success",
+                            });
+                          },
+                          onError: (error) => {
+                            toast({
+                              title: "Role update failed",
+                              description: error.message,
+                              variant: "destructive",
+                            });
+                          },
+                        },
+                      )
                     }
                     disabled={member.status !== "active" || updateRoleMutation.isPending}
                   >
@@ -189,7 +227,25 @@ export function OrganizationDetailPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeMemberMutation.mutate(member.id)}
+                    onClick={() =>
+                      removeMemberMutation.mutate(member.id, {
+                        onSuccess: () => {
+                          toast({
+                            title: "Member removed",
+                            description: `${member.email} was removed from this organization.`,
+                            variant: "success",
+                          });
+                        },
+                        onError: (error) => {
+                          toast({
+                            title: "Remove failed",
+                            description: error.message,
+                            variant: "destructive",
+                          });
+                        },
+                      })
+                    }
+                    aria-label={`Remove ${member.email}`}
                     disabled={removeMemberMutation.isPending}
                   >
                     <Trash2 className="h-4 w-4" />

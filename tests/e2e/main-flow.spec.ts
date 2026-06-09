@@ -28,7 +28,7 @@ test("complete organization and invitation flow", async ({ page }) => {
   await inviteEmailField.fill(inviteEmail);
   await page.getByRole("button", { name: "Invite" }).click();
 
-  await expect(page.getByText(inviteEmail)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(inviteEmail, { exact: true })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("invited", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /copy link/i })).toBeVisible();
 
@@ -40,5 +40,5 @@ test("complete organization and invitation flow", async ({ page }) => {
   await expect(inviteEmailField).toHaveValue(inviteEmail);
   await page.getByRole("button", { name: "Invite" }).click();
 
-  await expect(page.getByText(/already been invited/i)).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("#main-content").getByText(/already been invited/i)).toBeVisible({ timeout: 30_000 });
 });

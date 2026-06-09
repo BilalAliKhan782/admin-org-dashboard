@@ -89,6 +89,9 @@ describe("AuthPage", () => {
       expect(signUp).toHaveBeenCalledWith({
         email: "new-admin@example.com",
         password: "password123",
+        options: {
+          emailRedirectTo: "http://localhost:3000/",
+        },
       });
     });
   });

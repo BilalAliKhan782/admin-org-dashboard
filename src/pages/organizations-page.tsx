@@ -1,17 +1,23 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, ChevronLeft, ChevronRight, Copy, Plus, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useOrganizations } from "@/api/organizations";
+import { getMyProfile } from "@/api/profile";
 import { ExportButton } from "@/components/organizations/export-button";
 import { OrgCardSkeleton } from "@/components/organizations/org-card-skeleton";
 import { OrgStats } from "@/components/organizations/org-stats";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { typeBadgeClasses, typeLabels } from "@/constants/organizations";
 import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/lib/clipboard";
 import { formatRelativeDate } from "@/lib/utils";
 import type { OrganizationType } from "@/types/database";
 
@@ -20,6 +26,8 @@ type SortBy = "newest" | "oldest" | "members";
 
 export function OrganizationsPage() {
   const organizationsQuery = useOrganizations();
+  const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getMyProfile });
+  const canCreateOrganizations = profileQuery.data?.is_admin === true;
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("newest");
@@ -72,7 +80,13 @@ export function OrganizationsPage() {
   }
 
   async function copyOrganizationId(id: string) {
-    await navigator.clipboard.writeText(id);
+    const copied = await copyToClipboard(id);
+
+    toast({
+      title: copied ? "Organization ID copied" : "Unable to copy",
+      description: copied ? "The organization ID is ready to paste." : "Please copy the ID manually.",
+      variant: copied ? "success" : "destructive",
+    });
   }
 
   return (
@@ -84,12 +98,14 @@ export function OrganizationsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <ExportButton organizations={filteredOrgs} />
-          <Button asChild>
-            <Link to="/organizations/new">
-              <Plus className="h-4 w-4" />
-              New organization
-            </Link>
-          </Button>
+          {canCreateOrganizations ? (
+            <Button asChild>
+              <Link to="/organizations/new">
+                <Plus className="h-4 w-4" />
+                New organization
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -147,23 +163,28 @@ export function OrganizationsPage() {
       ) : null}
 
       {organizationsQuery.data?.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>No organizations yet</CardTitle>
-            <CardDescription>Create the first organization to start inviting members.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link to="/organizations/new">Create organization</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Building2}
+          title={canCreateOrganizations ? "No organizations yet" : "No organizations yet"}
+          description={
+            canCreateOrganizations
+              ? "Create your first organization to start managing members and invitations."
+              : "You will see organizations here after you accept an invitation."
+          }
+          action={
+            canCreateOrganizations
+              ? { label: "Create organization", onClick: () => (window.location.href = "/organizations/new") }
+              : undefined
+          }
+        />
       ) : null}
 
       {organizationsQuery.data?.length && filteredOrgs.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground">No organizations match your filters.</CardContent>
-        </Card>
+        <EmptyState
+          icon={Building2}
+          title="No matching organizations"
+          description="Adjust your search, type filter, or sort option to find what you need."
+        />
       ) : null}
 
       {organizationsQuery.data?.length ? (
@@ -172,7 +193,7 @@ export function OrganizationsPage() {
           <Link
             key={organization.id}
             to={`/organizations/${organization.id}`}
-            className="grid gap-3 border-b p-4 transition-colors last:border-b-0 hover:bg-muted/60 sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
+            className="grid gap-3 border-b p-4 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/60 hover:shadow-xl hover:shadow-primary/5 sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
           >
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
@@ -189,18 +210,25 @@ export function OrganizationsPage() {
             <Badge className={typeBadgeClasses[organization.type]}>{typeLabels[organization.type]}</Badge>
             <span className="text-sm text-muted-foreground">{organization.member_count} members</span>
             <span className="text-sm text-muted-foreground">{formatRelativeDate(organization.created_at)}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label={`Copy ID for ${organization.name}`}
-              onClick={(event) => {
-                event.preventDefault();
-                void copyOrganizationId(organization.id);
-              }}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Copy ID for ${organization.name}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      void copyOrganizationId(organization.id);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy organization ID</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <ChevronRight className="hidden h-5 w-5 text-muted-foreground sm:block" />
           </Link>
           ))}

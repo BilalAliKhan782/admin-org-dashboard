@@ -10,6 +10,7 @@ export type OrganizationMember = Database["public"]["Tables"]["organization_memb
 export type ActivityLogItem = Database["public"]["Tables"]["activity_log"]["Row"];
 export type InvitationDetails = Database["public"]["Functions"]["get_invitation_by_token"]["Returns"][number];
 export type InviteMemberResult = OrganizationMember & {
+  email_sent?: boolean;
   invitation_url?: string;
 };
 
