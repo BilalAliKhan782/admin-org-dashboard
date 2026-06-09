@@ -156,6 +156,26 @@ export function useRemoveMember(organizationId?: string) {
   });
 }
 
+export async function updateMemberRole(memberId: string, role: OrganizationMember["role"]) {
+  const { error } = await supabase.from("organization_members").update({ role }).eq("id", memberId);
+  if (error) throw error;
+}
+
+export function useUpdateMemberRole(organizationId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memberId, role }: { memberId: string; role: OrganizationMember["role"] }) =>
+      updateMemberRole(memberId, role),
+    onSuccess: async () => {
+      if (!organizationId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: organizationKeys.members(organizationId) }),
+        queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+      ]);
+    },
+  });
+}
+
 export async function acceptInvitation(token: string) {
   const { data, error } = await supabase.rpc("accept_invitation", { p_token: token });
   if (error) throw error;

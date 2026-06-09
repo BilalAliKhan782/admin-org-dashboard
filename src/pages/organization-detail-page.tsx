@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Copy, MailPlus, Trash2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
-import { useInviteMember, useMembers, useOrganization, useRemoveMember } from "@/api/organizations";
+import { useInviteMember, useMembers, useOrganization, useRemoveMember, useUpdateMemberRole } from "@/api/organizations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,7 @@ export function OrganizationDetailPage() {
   const membersQuery = useMembers(organizationId);
   const inviteMutation = useInviteMember(organizationId);
   const removeMemberMutation = useRemoveMember(organizationId);
+  const updateRoleMutation = useUpdateMemberRole(organizationId);
   const { user } = useAuth();
 
   async function copyInviteLink(token: string) {
@@ -137,13 +138,37 @@ export function OrganizationDetailPage() {
           {membersQuery.data?.length === 0 ? <p className="text-sm text-muted-foreground">No members have been invited yet.</p> : null}
           <div className="divide-y rounded-md border">
             {membersQuery.data?.map((member) => (
-              <div key={member.id} className="grid gap-2 p-4 sm:grid-cols-[1fr_100px_100px_140px_auto_auto] sm:items-center">
+              <div key={member.id} className="grid gap-2 p-4 sm:grid-cols-[1fr_100px_128px_140px_auto_auto] sm:items-center">
                 <span className="font-medium">{member.email}</span>
                 <Badge className={statusBadgeClasses[member.status]}>{member.status}</Badge>
-                <span className="text-sm capitalize text-muted-foreground">
-                  {member.role}
-                  {member.user_id === user?.id ? " (you)" : ""}
-                </span>
+                {canManageMembers ? (
+                  <Select
+                    value={member.role}
+                    onValueChange={(role) =>
+                      updateRoleMutation.mutate({ memberId: member.id, role: role as typeof member.role })
+                    }
+                    disabled={member.status !== "active" || updateRoleMutation.isPending}
+                  >
+                    <SelectTrigger aria-label={`Role for ${member.email}`} className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge
+                    className={
+                      member.role === "manager"
+                        ? "w-fit bg-primary text-primary-foreground"
+                        : "w-fit bg-secondary text-secondary-foreground"
+                    }
+                  >
+                    {member.role}
+                    {member.user_id === user?.id ? " (you)" : ""}
+                  </Badge>
+                )}
                 <span className="text-sm text-muted-foreground">{formatRelativeDate(member.invited_at)}</span>
                 {canManageMembers && member.status === "invited" ? (
                   <Button
@@ -178,6 +203,11 @@ export function OrganizationDetailPage() {
           {removeMemberMutation.isError ? (
             <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {removeMemberMutation.error.message}
+            </p>
+          ) : null}
+          {updateRoleMutation.isError ? (
+            <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {updateRoleMutation.error.message}
             </p>
           ) : null}
         </CardContent>
