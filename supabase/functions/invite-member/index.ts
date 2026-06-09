@@ -1,3 +1,6 @@
+import { Ratelimit } from "npm:@upstash/ratelimit";
+import { Redis } from "npm:@upstash/redis";
+import { Resend } from "npm:resend";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.46.1";
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
@@ -12,6 +15,21 @@ const inviteSchema = z.object({
   email: z.string().trim().email().toLowerCase(),
   role: z.enum(["member", "manager"]).default("member"),
 });
+
+const redisUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
+const redisToken = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL") ?? "AdminDash <onboarding@resend.dev>";
+
+const ratelimit =
+  redisUrl && redisToken
+    ? new Ratelimit({
+        redis: new Redis({ url: redisUrl, token: redisToken }),
+        limiter: Ratelimit.slidingWindow(10, "60 s"),
+        analytics: true,
+      })
+    : null;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -47,6 +65,21 @@ Deno.serve(async (req) => {
 
   if (userError || !user) {
     return json({ error: "Invalid user session." }, 401);
+  }
+
+  if (ratelimit) {
+    const { success, remaining } = await ratelimit.limit(user.id);
+
+    if (!success) {
+      return json(
+        {
+          error: "Too many requests. Please try again later.",
+          retryAfter: 60,
+        },
+        429,
+        { "X-RateLimit-Remaining": remaining.toString() },
+      );
+    }
   }
 
   const parsed = inviteSchema.safeParse(await req.json().catch(() => null));
@@ -90,7 +123,7 @@ Deno.serve(async (req) => {
       status: "invited",
       invitation_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     })
-    .select("*")
+    .select("*, organizations(name)")
     .single();
 
   if (error) {
@@ -103,12 +136,31 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") ?? Deno.env.get("SITE_URL") ?? "";
   const invitationUrl = origin ? `${origin}/accept-invitation/${data.invitation_token}` : undefined;
 
+  if (resend && invitationUrl) {
+    const organizationName = data.organizations?.name ?? "your organization";
+
+    const emailResult = await resend.emails.send({
+      from: resendFromEmail,
+      to: parsed.data.email,
+      subject: `You're invited to ${organizationName}`,
+      html: `
+        <p>You have been invited to join <strong>${organizationName}</strong>.</p>
+        <p><a href="${invitationUrl}">Accept your invitation</a></p>
+        <p>This invitation expires in 7 days.</p>
+      `,
+    });
+
+    if (emailResult.error) {
+      console.error("Failed to send invitation email:", emailResult.error);
+    }
+  }
+
   return json({ ...data, invitation_url: invitationUrl }, 201);
 });
 
-function json(body: unknown, status = 200) {
+function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, ...headers, "Content-Type": "application/json" },
   });
 }

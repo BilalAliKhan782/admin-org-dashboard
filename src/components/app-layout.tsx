@@ -2,6 +2,7 @@ import { Building2, LogOut, Plus } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 export function AppLayout() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  useKeyboardShortcuts();
 
   async function signOut() {
     await supabase.auth.signOut();

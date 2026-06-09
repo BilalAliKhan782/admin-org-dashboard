@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { identifyUser } from "@/lib/analytics";
 import { supabase } from "@/lib/supabase";
 
 interface AuthState {
@@ -31,6 +32,12 @@ export function useAuth() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (state.session?.user) {
+      identifyUser(state.session.user.id, { email: state.session.user.email });
+    }
+  }, [state.session]);
 
   return state;
 }
