@@ -3,6 +3,7 @@ import { Copy, MailPlus, Trash2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
 import { useInviteMember, useMembers, useOrganization, useRemoveMember, useUpdateMemberRole } from "@/api/organizations";
+import { ActivityFeed } from "@/components/organizations/activity-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -212,6 +213,8 @@ export function OrganizationDetailPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      {organizationId ? <ActivityFeed organizationId={organizationId} /> : null}
     </section>
   );
 }

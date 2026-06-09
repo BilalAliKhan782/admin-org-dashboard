@@ -7,6 +7,7 @@ import type { OrganizationFormValues } from "@/schemas/organization";
 export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 export type OrganizationDirectoryItem = Database["public"]["Views"]["organization_directory"]["Row"];
 export type OrganizationMember = Database["public"]["Tables"]["organization_members"]["Row"];
+export type ActivityLogItem = Database["public"]["Tables"]["activity_log"]["Row"];
 export type InvitationDetails = Database["public"]["Functions"]["get_invitation_by_token"]["Returns"][number];
 export type InviteMemberResult = OrganizationMember & {
   invitation_url?: string;
@@ -16,6 +17,7 @@ export const organizationKeys = {
   all: ["organizations"] as const,
   detail: (id: string) => ["organizations", id] as const,
   members: (id: string) => ["organizations", id, "members"] as const,
+  activity: (id: string) => ["organizations", id, "activity"] as const,
 };
 
 export async function listOrganizations() {
@@ -64,6 +66,7 @@ export async function createOrganization(values: OrganizationFormValues) {
 
   const { data, error } = await supabase.from("organizations").insert(payload).select("*").single();
   if (error) throw error;
+  await logActivity(data.id, "organization_created", { name: data.name, type: data.type });
   return data;
 }
 
@@ -96,6 +99,26 @@ export function useMembers(organizationId?: string) {
   });
 }
 
+export async function listActivityLog(organizationId: string) {
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export function useActivityLog(organizationId?: string) {
+  return useQuery({
+    queryKey: organizationKeys.activity(organizationId ?? ""),
+    queryFn: () => listActivityLog(organizationId!),
+    enabled: Boolean(organizationId),
+  });
+}
+
 export async function inviteMember(organizationId: string, values: InvitationFormValues) {
   const { data, error } = await supabase.functions.invoke<InviteMemberResult>("invite-member", {
     body: {
@@ -115,9 +138,11 @@ export function useInviteMember(organizationId?: string) {
     mutationFn: (values: InvitationFormValues) => inviteMember(organizationId!, values),
     onSuccess: async () => {
       if (!organizationId) return;
+      await logActivity(organizationId, "member_invited");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: organizationKeys.members(organizationId) }),
         queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: organizationKeys.activity(organizationId) }),
       ]);
     },
   });
@@ -148,9 +173,11 @@ export function useRemoveMember(organizationId?: string) {
     mutationFn: removeMember,
     onSuccess: async () => {
       if (!organizationId) return;
+      await logActivity(organizationId, "member_removed");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: organizationKeys.members(organizationId) }),
         queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: organizationKeys.activity(organizationId) }),
       ]);
     },
   });
@@ -166,11 +193,13 @@ export function useUpdateMemberRole(organizationId?: string) {
   return useMutation({
     mutationFn: ({ memberId, role }: { memberId: string; role: OrganizationMember["role"] }) =>
       updateMemberRole(memberId, role),
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       if (!organizationId) return;
+      await logActivity(organizationId, "member_role_updated", { role: variables.role });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: organizationKeys.members(organizationId) }),
         queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: organizationKeys.activity(organizationId) }),
       ]);
     },
   });
@@ -201,4 +230,23 @@ async function getFunctionErrorMessage(error: Error & { context?: Response }) {
   }
 
   return error.message;
+}
+
+async function logActivity(organizationId: string, action: string, details: Record<string, string> = {}) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const { error } = await supabase.from("activity_log").insert({
+    organization_id: organizationId,
+    user_id: user.id,
+    action,
+    details,
+  });
+
+  if (error) {
+    console.warn("Failed to record activity", error);
+  }
 }

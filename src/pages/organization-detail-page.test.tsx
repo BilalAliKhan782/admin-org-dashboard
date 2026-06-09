@@ -3,7 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrganizationDetailPage } from "@/pages/organization-detail-page";
-import { useInviteMember, useMembers, useOrganization, useRemoveMember, useUpdateMemberRole } from "@/api/organizations";
+import {
+  useActivityLog,
+  useInviteMember,
+  useMembers,
+  useOrganization,
+  useRemoveMember,
+  useUpdateMemberRole,
+} from "@/api/organizations";
 import { useAuth } from "@/hooks/use-auth";
 
 vi.mock("@/api/organizations", () => ({
@@ -12,6 +19,7 @@ vi.mock("@/api/organizations", () => ({
   useInviteMember: vi.fn(),
   useRemoveMember: vi.fn(),
   useUpdateMemberRole: vi.fn(),
+  useActivityLog: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -23,6 +31,7 @@ const useMembersMock = vi.mocked(useMembers);
 const useInviteMemberMock = vi.mocked(useInviteMember);
 const useRemoveMemberMock = vi.mocked(useRemoveMember);
 const useUpdateMemberRoleMock = vi.mocked(useUpdateMemberRole);
+const useActivityLogMock = vi.mocked(useActivityLog);
 const useAuthMock = vi.mocked(useAuth);
 const mutate = vi.fn();
 const removeMutate = vi.fn();
@@ -80,6 +89,7 @@ describe("OrganizationDetailPage", () => {
     useInviteMemberMock.mockReturnValue({ mutate, isPending: false, isError: false } as never);
     useRemoveMemberMock.mockReturnValue({ mutate: removeMutate, isPending: false, isError: false } as never);
     useUpdateMemberRoleMock.mockReturnValue({ mutate: updateRoleMutate, isPending: false, isError: false } as never);
+    useActivityLogMock.mockReturnValue({ data: [], isLoading: false, isError: false } as never);
   });
 
   it("renders organization type details and member status badges", () => {
