@@ -28,6 +28,10 @@ test("complete organization and invitation flow", async ({ page }) => {
 
   await expect(page.getByText(inviteEmail)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("invited", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /copy link/i })).toBeVisible();
+
+  const roleSelect = page.getByLabel(`Role for ${inviteEmail}`);
+  await expect(roleSelect).toBeDisabled();
 
   await page.getByLabel("Email").fill(inviteEmail);
   await page.getByRole("button", { name: "Invite" }).click();

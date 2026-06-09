@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrganizationDetailPage } from "@/pages/organization-detail-page";
-import { useInviteMember, useMembers, useOrganization, useRemoveMember } from "@/api/organizations";
+import { useInviteMember, useMembers, useOrganization, useRemoveMember, useUpdateMemberRole } from "@/api/organizations";
 import { useAuth } from "@/hooks/use-auth";
 
 vi.mock("@/api/organizations", () => ({
@@ -11,6 +11,7 @@ vi.mock("@/api/organizations", () => ({
   useMembers: vi.fn(),
   useInviteMember: vi.fn(),
   useRemoveMember: vi.fn(),
+  useUpdateMemberRole: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -21,9 +22,11 @@ const useOrganizationMock = vi.mocked(useOrganization);
 const useMembersMock = vi.mocked(useMembers);
 const useInviteMemberMock = vi.mocked(useInviteMember);
 const useRemoveMemberMock = vi.mocked(useRemoveMember);
+const useUpdateMemberRoleMock = vi.mocked(useUpdateMemberRole);
 const useAuthMock = vi.mocked(useAuth);
 const mutate = vi.fn();
 const removeMutate = vi.fn();
+const updateRoleMutate = vi.fn();
 
 function renderDetailPage() {
   return render(
@@ -69,12 +72,14 @@ describe("OrganizationDetailPage", () => {
           invited_at: new Date(Date.now() - 60 * 1000).toISOString(),
           joined_at: null,
           invitation_token: "11111111-1111-1111-1111-111111111111",
+          invitation_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         },
       ],
       isLoading: false,
     } as never);
     useInviteMemberMock.mockReturnValue({ mutate, isPending: false, isError: false } as never);
     useRemoveMemberMock.mockReturnValue({ mutate: removeMutate, isPending: false, isError: false } as never);
+    useUpdateMemberRoleMock.mockReturnValue({ mutate: updateRoleMutate, isPending: false, isError: false } as never);
   });
 
   it("renders organization type details and member status badges", () => {
@@ -85,6 +90,7 @@ describe("OrganizationDetailPage", () => {
     expect(screen.getByText("acme.test")).toBeInTheDocument();
     expect(screen.getByText("invited")).toHaveClass("bg-amber-50");
     expect(screen.getByText("1 minute ago")).toBeInTheDocument();
+    expect(screen.getByLabelText("Role for member@example.com")).toBeDisabled();
   });
 
   it("submits member invitations with lowercased email", async () => {
