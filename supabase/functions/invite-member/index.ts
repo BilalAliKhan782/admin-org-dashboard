@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
       email: parsed.data.email,
       role: parsed.data.role,
       status: "invited",
+      invitation_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select("*")
     .single();

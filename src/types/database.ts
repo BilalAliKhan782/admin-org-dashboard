@@ -50,6 +50,7 @@ export interface Database {
           invited_at: string;
           joined_at: string | null;
           invitation_token: string;
+          invitation_expires_at: string;
         };
         Insert: {
           id?: string;
@@ -61,6 +62,7 @@ export interface Database {
           invited_at?: string;
           joined_at?: string | null;
           invitation_token?: string;
+          invitation_expires_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["organization_members"]["Insert"]>;
         Relationships: [
@@ -140,6 +142,7 @@ export interface Database {
           role: MemberRole;
           status: MemberStatus;
           invited_at: string;
+          invitation_expires_at: string;
         }[];
       };
     };

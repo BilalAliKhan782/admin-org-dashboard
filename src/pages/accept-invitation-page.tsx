@@ -1,4 +1,4 @@
-import { CheckCircle2, Mail, UserPlus } from "lucide-react";
+import { CheckCircle2, Mail, Timer, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAcceptInvitation, useInvitation } from "@/api/organizations";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,9 @@ export function AcceptInvitationPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const invitationQuery = useInvitation(token);
   const acceptMutation = useAcceptInvitation();
+  const isExpired = invitationQuery.data
+    ? new Date(invitationQuery.data.invitation_expires_at).getTime() <= Date.now()
+    : false;
 
   function acceptInvite() {
     if (!token) return;
@@ -63,10 +66,20 @@ export function AcceptInvitationPage() {
                     Role: <span className="capitalize text-foreground">{invitationQuery.data.role}</span>
                   </p>
                   <p>Invited {formatRelativeDate(invitationQuery.data.invited_at)}</p>
+                  <p className="flex items-center gap-2">
+                    <Timer className="h-4 w-4" />
+                    Expires {formatRelativeDate(invitationQuery.data.invitation_expires_at)}
+                  </p>
                 </div>
               </div>
 
-              {!isAuthLoading && !user ? (
+              {isExpired ? (
+                <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  This invitation has expired. Ask the organization manager for a new link.
+                </p>
+              ) : null}
+
+              {!isExpired && !isAuthLoading && !user ? (
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button asChild>
                     <Link to="/auth" state={{ from: location }}>
@@ -81,7 +94,7 @@ export function AcceptInvitationPage() {
                 </div>
               ) : null}
 
-              {user ? (
+              {!isExpired && user ? (
                 <div className="space-y-3">
                   <Button onClick={acceptInvite} disabled={acceptMutation.isPending}>
                     <CheckCircle2 className="h-4 w-4" />
