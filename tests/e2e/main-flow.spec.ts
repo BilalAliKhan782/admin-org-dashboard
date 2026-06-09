@@ -3,7 +3,8 @@ import { expect, test } from "@playwright/test";
 test("complete organization and invitation flow", async ({ page }) => {
   const runId = Date.now();
   const organizationName = `Test Org ${runId}`;
-  const inviteEmail = `test-${runId}@example.com`;
+  const configuredInviteEmail = process.env.E2E_INVITE_EMAIL;
+  const inviteEmail = configuredInviteEmail ?? `test-${runId}@example.com`;
 
   await page.goto("/auth");
   await page.getByLabel("Email").fill("reviewer@adminorg.dev");
@@ -28,7 +29,18 @@ test("complete organization and invitation flow", async ({ page }) => {
   await inviteEmailField.fill(inviteEmail);
   await page.getByRole("button", { name: "Invite" }).click();
 
-  await expect(page.getByText(inviteEmail, { exact: true })).toBeVisible({ timeout: 30_000 });
+  const emailDeliveryError = page.locator("#main-content").getByText(/invitation email could not be sent/i);
+  const invitedMemberEmail = page.getByText(inviteEmail, { exact: true });
+  const inviteOutcome = await Promise.race([
+    invitedMemberEmail.waitFor({ state: "visible", timeout: 30_000 }).then(() => "sent"),
+    emailDeliveryError.waitFor({ state: "visible", timeout: 30_000 }).then(() => "email-error"),
+  ]);
+
+  if (!configuredInviteEmail && inviteOutcome === "email-error") {
+    test.skip(true, "Set E2E_INVITE_EMAIL to a real deliverable address to exercise Resend-backed invitations.");
+  }
+
+  await expect(invitedMemberEmail).toBeVisible();
   await expect(page.getByText("invited", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /copy link/i })).toBeVisible();
 

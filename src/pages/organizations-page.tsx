@@ -1,21 +1,24 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, ChevronLeft, ChevronRight, Copy, Plus, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/api/organizations";
 import { getMyProfile } from "@/api/profile";
 import { ExportButton } from "@/components/organizations/export-button";
+import { OrgContextMenu } from "@/components/organizations/org-context-menu";
 import { OrgCardSkeleton } from "@/components/organizations/org-card-skeleton";
 import { OrgStats } from "@/components/organizations/org-stats";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FAB } from "@/components/ui/fab";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { typeBadgeClasses, typeLabels } from "@/constants/organizations";
 import { useDebounce } from "@/hooks/use-debounce";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatRelativeDate } from "@/lib/utils";
@@ -25,6 +28,7 @@ type TypeFilter = OrganizationType | "all";
 type SortBy = "newest" | "oldest" | "members";
 
 export function OrganizationsPage() {
+  const navigate = useNavigate();
   const organizationsQuery = useOrganizations();
   const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getMyProfile });
   const canCreateOrganizations = profileQuery.data?.is_admin === true;
@@ -34,6 +38,9 @@ export function OrganizationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearchTerm = useDebounce(searchTerm, 250);
   const pageSize = 6;
+  const { isRefreshing, pullDistance } = usePullToRefresh(async () => {
+    await organizationsQuery.refetch();
+  });
 
   const filteredOrgs = useMemo(() => {
     const organizations = organizationsQuery.data ?? [];
@@ -91,6 +98,14 @@ export function OrganizationsPage() {
 
   return (
     <section className="space-y-5">
+      {(pullDistance > 0 || isRefreshing) ? (
+        <div
+          className="fixed left-1/2 top-3 z-50 -translate-x-1/2 rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm md:hidden"
+          style={{ opacity: Math.min(1, Math.max(0.35, pullDistance / 80)) }}
+        >
+          {isRefreshing ? "Refreshing..." : pullDistance > 80 ? "Release to refresh" : "Pull to refresh"}
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Organization Directory</h1>
@@ -190,47 +205,53 @@ export function OrganizationsPage() {
       {organizationsQuery.data?.length ? (
         <div className="overflow-hidden rounded-lg border bg-card">
           {visibleOrgs.map((organization) => (
-          <Link
+          <OrgContextMenu
             key={organization.id}
-            to={`/organizations/${organization.id}`}
-            className="grid gap-3 border-b p-4 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/60 hover:shadow-xl hover:shadow-primary/5 sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
+            organization={organization}
+            onCopyId={() => void copyOrganizationId(organization.id)}
+            onView={() => navigate(`/organizations/${organization.id}`)}
           >
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
-                <Building2 className="h-5 w-5" />
+            <Link
+              to={`/organizations/${organization.id}`}
+              className="grid gap-3 border-b p-4 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/60 hover:shadow-xl hover:shadow-primary/5 sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{organization.name}</p>
+                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="h-3.5 w-3.5" />
+                    {organization.member_count} {organization.member_count === 1 ? "member" : "members"}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="truncate font-medium">{organization.name}</p>
-                <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Users className="h-3.5 w-3.5" />
-                  {organization.member_count} {organization.member_count === 1 ? "member" : "members"}
-                </p>
-              </div>
-            </div>
-            <Badge className={typeBadgeClasses[organization.type]}>{typeLabels[organization.type]}</Badge>
-            <span className="text-sm text-muted-foreground">{organization.member_count} members</span>
-            <span className="text-sm text-muted-foreground">{formatRelativeDate(organization.created_at)}</span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Copy ID for ${organization.name}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      void copyOrganizationId(organization.id);
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Copy organization ID</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <ChevronRight className="hidden h-5 w-5 text-muted-foreground sm:block" />
-          </Link>
+              <Badge className={typeBadgeClasses[organization.type]}>{typeLabels[organization.type]}</Badge>
+              <span className="text-sm text-muted-foreground">{organization.member_count} members</span>
+              <span className="text-sm text-muted-foreground">{formatRelativeDate(organization.created_at)}</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Copy ID for ${organization.name}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void copyOrganizationId(organization.id);
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy organization ID</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <ChevronRight className="hidden h-5 w-5 text-muted-foreground sm:block" />
+            </Link>
+          </OrgContextMenu>
           ))}
         </div>
       ) : null}
@@ -263,6 +284,9 @@ export function OrganizationsPage() {
             </Button>
           </div>
         </div>
+      ) : null}
+      {canCreateOrganizations ? (
+        <FAB onClick={() => navigate("/organizations/new")} label="New" icon={<Plus className="h-5 w-5" />} />
       ) : null}
     </section>
   );

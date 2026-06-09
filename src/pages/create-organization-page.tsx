@@ -5,10 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useCreateOrganization } from "@/api/organizations";
 import { getMyProfile } from "@/api/profile";
+import { AutoSaveIndicator } from "@/components/ui/auto-save-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { RippleButton } from "@/components/ui/ripple-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { organizationTypes } from "@/constants/organizations";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
@@ -34,6 +36,7 @@ export function CreateOrganizationPage() {
   const typeConfig = organizationTypes.find((type) => type.value === selectedType)!;
 
   const mutation = useCreateOrganization();
+  const draftStatus = form.formState.isSubmitting ? "saving" : form.formState.isSubmitSuccessful ? "saved" : "idle";
 
   if (profileQuery.isLoading) {
     return <p className="text-sm text-muted-foreground">Checking permissions...</p>;
@@ -78,7 +81,10 @@ export function CreateOrganizationPage() {
   return (
     <section className="max-w-2xl space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Create Organization</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold">Create Organization</h1>
+          <AutoSaveIndicator status={draftStatus} />
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">Choose a type and complete the required type-specific field.</p>
       </div>
       <Card>
@@ -146,10 +152,10 @@ export function CreateOrganizationPage() {
               />
             </FormField>
             {mutation.isError ? <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{mutation.error.message}</p> : null}
-            <Button disabled={mutation.isPending}>
+            <RippleButton disabled={mutation.isPending}>
               <Save className="h-4 w-4" />
               {mutation.isPending ? "Creating..." : "Create organization"}
-            </Button>
+            </RippleButton>
           </form>
         </CardContent>
       </Card>

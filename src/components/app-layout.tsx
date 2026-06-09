@@ -2,6 +2,7 @@ import { Building2, LogOut, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { PageTransition } from "@/components/page-transition";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { getMyProfile } from "@/api/profile";
@@ -78,7 +79,9 @@ export function AppLayout() {
         </nav>
         <main id="main-content" className="min-w-0">
           <Breadcrumbs />
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </main>
       </div>
     </div>
