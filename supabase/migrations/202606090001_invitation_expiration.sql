@@ -1,9 +1,11 @@
 alter table public.organization_members
-add column invitation_expires_at timestamptz not null default (now() + interval '7 days');
+add column if not exists invitation_expires_at timestamptz not null default (now() + interval '7 days');
 
-create index organization_members_invitation_expires_at_idx
+create index if not exists organization_members_invitation_expires_at_idx
   on public.organization_members(invitation_expires_at)
   where status = 'invited';
+
+drop function if exists public.get_invitation_by_token(uuid);
 
 create or replace function public.get_invitation_by_token(p_token uuid)
 returns table (
@@ -35,6 +37,8 @@ as $$
   where organization_members.invitation_token = p_token
   limit 1;
 $$;
+
+grant execute on function public.get_invitation_by_token(uuid) to anon, authenticated;
 
 create or replace function public.accept_invitation(p_token uuid)
 returns table (organization_id uuid)
@@ -70,3 +74,5 @@ begin
   return query select accepted_organization_id;
 end;
 $$;
+
+grant execute on function public.accept_invitation(uuid) to authenticated;
