@@ -203,7 +203,7 @@ export function OrganizationsPage() {
       ) : null}
 
       {organizationsQuery.data?.length ? (
-        <div className="overflow-hidden rounded-lg border bg-card">
+        <div className="overflow-hidden rounded-lg border bg-card shadow-[0_8px_20px_hsl(var(--foreground)/0.12)] dark:shadow-[0_8px_20px_hsl(0_0%_0%/0.45)]">
           {visibleOrgs.map((organization) => (
           <OrgContextMenu
             key={organization.id}
@@ -213,7 +213,7 @@ export function OrganizationsPage() {
           >
             <Link
               to={`/organizations/${organization.id}`}
-              className="grid gap-3 border-b p-4 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/60 hover:shadow-xl hover:shadow-primary/5 sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
+              className="grid gap-3 border-b p-4 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/70 hover:shadow-md sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">

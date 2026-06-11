@@ -36,8 +36,8 @@ export function AppLayout() {
       >
         Skip to content
       </a>
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="border-b bg-card shadow-sm">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <Link to="/" className="group flex items-center gap-2 text-lg font-semibold transition-opacity hover:opacity-85">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-110">
               <Building2 className="h-5 w-5" />
@@ -55,11 +55,14 @@ export function AppLayout() {
         </div>
       </header>
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-[220px_1fr]">
-        <nav className="flex gap-2 md:flex-col">
+        <nav className="flex gap-2 rounded-lg bg-primary p-3 text-primary-foreground shadow-[0_8px_20px_hsl(var(--foreground)/0.18)] md:min-h-[calc(100vh-7.5rem)] md:flex-col dark:shadow-[0_8px_20px_hsl(0_0%_0%/0.45)]">
           <NavLink
             to="/"
             className={({ isActive }) =>
-              cn("rounded-md px-3 py-2 text-sm font-medium hover:bg-muted", isActive && "bg-muted text-primary")
+              cn(
+                "rounded-md px-3 py-2 text-sm font-medium hover:bg-primary-foreground/15",
+                isActive && "bg-background text-foreground shadow-sm hover:bg-background",
+              )
             }
             end
           >
@@ -69,7 +72,10 @@ export function AppLayout() {
             <NavLink
               to="/organizations/new"
               className={({ isActive }) =>
-                cn("inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted", isActive && "bg-muted text-primary")
+                cn(
+                  "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-primary-foreground/15",
+                  isActive && "bg-background text-foreground shadow-sm hover:bg-background",
+                )
               }
             >
               <Plus className="h-4 w-4" />

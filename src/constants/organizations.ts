@@ -39,14 +39,14 @@ export const typeLabels = Object.fromEntries(
 ) as Record<OrganizationType, string>;
 
 export const typeBadgeClasses: Record<OrganizationType, string> = {
-  school: "border-sky-200 bg-sky-50 text-sky-700",
-  nonprofit: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  business: "border-violet-200 bg-violet-50 text-violet-700",
+  school: "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100",
+  nonprofit: "border-zinc-400 bg-zinc-200 text-zinc-900 dark:border-zinc-500 dark:bg-zinc-700 dark:text-zinc-50",
+  business: "border-zinc-500 bg-zinc-300 text-zinc-950 dark:border-zinc-400 dark:bg-zinc-600 dark:text-white",
 };
 
 export const statusBadgeClasses: Record<MemberStatus, string> = {
-  invited: "border-amber-200 bg-amber-50 text-amber-700",
-  active: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  invited: "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100",
+  active: "border-zinc-500 bg-zinc-900 text-white dark:border-zinc-200 dark:bg-zinc-100 dark:text-zinc-950",
 };
 
 export function getTypeSpecificDetail(organization: {

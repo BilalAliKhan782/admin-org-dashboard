@@ -67,7 +67,7 @@ describe("OrganizationsPage", () => {
     renderOrganizationsPage();
 
     expect(screen.getByText("River School").closest("a")).toHaveAttribute("href", "/organizations/org-1");
-    expect(screen.getByText("School")).toHaveClass("bg-sky-50");
+    expect(screen.getByText("School")).toHaveClass("bg-zinc-100");
     expect(screen.getAllByText("2 members")).toHaveLength(2);
     expect(screen.getByText("2 days ago")).toBeInTheDocument();
   });

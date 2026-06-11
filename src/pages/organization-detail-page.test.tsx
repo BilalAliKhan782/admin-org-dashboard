@@ -98,7 +98,7 @@ describe("OrganizationDetailPage", () => {
     expect(screen.getByText("Acme Ops")).toBeInTheDocument();
     expect(screen.getByText("Business domain:")).toBeInTheDocument();
     expect(screen.getByText("acme.test")).toBeInTheDocument();
-    expect(screen.getByText("invited")).toHaveClass("bg-amber-50");
+    expect(screen.getByText("invited")).toHaveClass("bg-zinc-100");
     expect(screen.getByText("1 minute ago")).toBeInTheDocument();
     expect(screen.getByLabelText("Role for member@example.com")).toBeDisabled();
   });
