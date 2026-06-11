@@ -54,34 +54,43 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-[220px_1fr]">
-        <nav className="flex gap-2 rounded-lg bg-primary p-3 text-primary-foreground shadow-[0_8px_20px_hsl(var(--foreground)/0.18)] md:min-h-[calc(100vh-7.5rem)] md:flex-col dark:shadow-[0_8px_20px_hsl(0_0%_0%/0.45)]">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              cn(
-                "rounded-md px-3 py-2 text-sm font-medium hover:bg-primary-foreground/15",
-                isActive && "bg-background text-foreground shadow-sm hover:bg-background",
-              )
-            }
-            end
-          >
-            Directory
-          </NavLink>
-          {canCreateOrganizations ? (
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-[240px_1fr]">
+        <nav className="flex gap-2 rounded-lg bg-primary p-3 text-primary-foreground shadow-[0_8px_20px_hsl(var(--foreground)/0.18)] md:min-h-[calc(100vh-7.5rem)] md:flex-col md:p-4 dark:shadow-[0_8px_20px_hsl(0_0%_0%/0.45)]">
+          <div className="hidden border-b border-primary-foreground/20 pb-4 md:block">
+            <p className="text-xs uppercase tracking-[0.18em] text-primary-foreground/60">Workspace</p>
+            <p className="mt-2 truncate text-lg font-semibold">AdminDash</p>
+          </div>
+          <div className="flex gap-2 md:flex-col md:pt-2">
             <NavLink
-              to="/organizations/new"
+              to="/"
               className={({ isActive }) =>
                 cn(
-                  "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-primary-foreground/15",
+                  "rounded-md px-3 py-2 text-sm font-medium hover:bg-primary-foreground/15",
                   isActive && "bg-background text-foreground shadow-sm hover:bg-background",
                 )
               }
+              end
             >
-              <Plus className="h-4 w-4" />
-              Create
+              Directory
             </NavLink>
-          ) : null}
+            {canCreateOrganizations ? (
+              <NavLink
+                to="/organizations/new"
+                className={({ isActive }) =>
+                  cn(
+                    "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-primary-foreground/15",
+                    isActive && "bg-background text-foreground shadow-sm hover:bg-background",
+                  )
+                }
+              >
+                <Plus className="h-4 w-4" />
+                Create
+              </NavLink>
+            ) : null}
+          </div>
+          <div className="mt-auto hidden border-t border-primary-foreground/20 pt-4 text-xs text-primary-foreground/60 md:block">
+            <p className="truncate">{user?.email}</p>
+          </div>
         </nav>
         <main id="main-content" className="min-w-0">
           <Breadcrumbs />

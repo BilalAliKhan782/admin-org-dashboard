@@ -127,7 +127,7 @@ export function OrganizationsPage() {
       {organizationsQuery.data?.length ? <OrgStats organizations={organizationsQuery.data} /> : null}
 
       {organizationsQuery.data?.length ? (
-        <div className="space-y-3">
+        <div className="rounded-lg border bg-card p-3 shadow-[0_8px_20px_hsl(var(--foreground)/0.08)] dark:shadow-[0_8px_20px_hsl(0_0%_0%/0.35)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Input
               placeholder="Search organizations..."
@@ -157,7 +157,7 @@ export function OrganizationsPage() {
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             Showing {visibleOrgs.length} of {filteredOrgs.length} filtered organizations
           </p>
         </div>
@@ -204,6 +204,14 @@ export function OrganizationsPage() {
 
       {organizationsQuery.data?.length ? (
         <div className="overflow-hidden rounded-lg border bg-card shadow-[0_8px_20px_hsl(var(--foreground)/0.12)] dark:shadow-[0_8px_20px_hsl(0_0%_0%/0.45)]">
+          <div className="hidden grid-cols-[1fr_120px_100px_130px_64px_24px] border-b bg-muted/70 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:grid">
+            <span>Organization</span>
+            <span>Type</span>
+            <span>Members</span>
+            <span>Created</span>
+            <span>Actions</span>
+            <span aria-hidden="true" />
+          </div>
           {visibleOrgs.map((organization) => (
           <OrgContextMenu
             key={organization.id}
@@ -213,23 +221,23 @@ export function OrganizationsPage() {
           >
             <Link
               to={`/organizations/${organization.id}`}
-              className="grid gap-3 border-b p-4 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/70 hover:shadow-md sm:grid-cols-[1fr_140px_120px_140px_40px_24px] sm:items-center"
+              className="grid gap-3 border-b p-3 transition-all duration-200 last:border-b-0 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted/70 hover:shadow-md sm:grid-cols-[1fr_120px_100px_130px_64px_24px] sm:items-center"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
-                  <Building2 className="h-5 w-5" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                  <Building2 className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate font-medium">{organization.name}</p>
-                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Users className="h-3.5 w-3.5" />
                     {organization.member_count} {organization.member_count === 1 ? "member" : "members"}
                   </p>
                 </div>
               </div>
               <Badge className={typeBadgeClasses[organization.type]}>{typeLabels[organization.type]}</Badge>
-              <span className="text-sm text-muted-foreground">{organization.member_count} members</span>
-              <span className="text-sm text-muted-foreground">{formatRelativeDate(organization.created_at)}</span>
+              <span className="text-sm text-muted-foreground sm:text-xs">{organization.member_count} members</span>
+              <span className="text-sm text-muted-foreground sm:text-xs">{formatRelativeDate(organization.created_at)}</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

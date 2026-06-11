@@ -22,15 +22,17 @@ export function OrgStats({ organizations }: OrgStatsProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       {stats.map((stat) => (
-        <Card key={stat.label}>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
-              <stat.icon className="h-5 w-5" />
+        <Card key={stat.label} className="overflow-hidden">
+          <CardContent className="min-h-28 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="min-w-0 flex-1 truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {stat.label}
+              </p>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <stat.icon className="h-5 w-5" />
+              </div>
             </div>
-            <div>
-              <p className="text-xl font-semibold leading-none">{stat.value}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
-            </div>
+            <p className="mt-4 text-3xl font-semibold leading-none">{stat.value}</p>
           </CardContent>
         </Card>
       ))}
