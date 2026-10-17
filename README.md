@@ -133,14 +133,11 @@ supabase functions deploy invite-member
 
 In Vercel, enable `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for Production, Preview, and Development environments.
 
-## Test Credentials
+## Live verification credentials
 
-Seeded reviewer admin:
-
-```text
-Email: reviewer@adminorg.dev
-Password: BilalAdmin!2026
-```
+The optional live-verification script reads its reviewer account from
+`REVIEWER_EMAIL` and `REVIEWER_PASSWORD` in `.env.local`. Keep these values local
+and rotate them if they have ever been shared or committed.
 
 To create another admin user, create the user in Supabase Auth, then promote its profile:
 
@@ -170,7 +167,7 @@ npm run test:e2e         # Run Playwright tests
 npm run test:e2e:ui      # Open Playwright UI
 ```
 
-The E2E test uses the reviewer admin credentials and creates a unique organization/invitation for each run.
+The E2E test reads `REVIEWER_EMAIL` and `REVIEWER_PASSWORD` from the shell environment and creates a unique organization/invitation for each run. It skips the live flow when either value is missing.
 
 ## Features
 

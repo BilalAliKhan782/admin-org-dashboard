@@ -15,6 +15,15 @@ const env = Object.fromEntries(
 
 const supabaseUrl = env.VITE_SUPABASE_URL;
 const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
+const reviewerEmail = env.REVIEWER_EMAIL;
+const reviewerPassword = env.REVIEWER_PASSWORD;
+
+if (!supabaseUrl || !supabaseAnonKey || !reviewerEmail || !reviewerPassword) {
+  throw new Error(
+    "Missing VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, REVIEWER_EMAIL, or REVIEWER_PASSWORD in .env.local",
+  );
+}
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const results = [];
 
@@ -60,8 +69,8 @@ async function main() {
   }
 
   const auth = await supabase.auth.signInWithPassword({
-    email: "reviewer@adminorg.dev",
-    password: "BilalAdmin!2026",
+    email: reviewerEmail,
+    password: reviewerPassword,
   });
 
   if (auth.error || !auth.data.session) {
