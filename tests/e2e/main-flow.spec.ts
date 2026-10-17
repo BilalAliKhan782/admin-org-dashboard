@@ -1,13 +1,18 @@
 import { expect, test } from "@playwright/test";
 
+const reviewerEmail = process.env.REVIEWER_EMAIL ?? "";
+const reviewerPassword = process.env.REVIEWER_PASSWORD ?? "";
+
 test("complete organization and invitation flow", async ({ page }) => {
+  test.skip(!reviewerEmail || !reviewerPassword, "Set REVIEWER_EMAIL and REVIEWER_PASSWORD to run the live flow");
+
   const runId = Date.now();
   const organizationName = `Test Org ${runId}`;
   const inviteEmail = `test-${runId}@example.com`;
 
   await page.goto("/auth");
-  await page.getByLabel("Email").fill("reviewer@adminorg.dev");
-  await page.getByLabel("Password").fill("BilalAdmin!2026");
+  await page.getByLabel("Email").fill(reviewerEmail);
+  await page.getByLabel("Password").fill(reviewerPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("heading", { name: "Organization Directory" })).toBeVisible({ timeout: 15_000 });
